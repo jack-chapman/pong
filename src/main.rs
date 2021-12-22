@@ -20,12 +20,13 @@ fn main() {
             right_score: 0,
         })
         .add_startup_system(setup.system())
+        .add_system(paddle_movement_system.system())
         .run()
 }
 
 enum PlayerSide {
-    Left,
     Right,
+    Left,
 }
 
 struct Paddle {
@@ -64,7 +65,7 @@ fn setup(
                 justify_content: JustifyContent::Center,
                 position_type: PositionType::Absolute,
                 position: Rect {
-                    top: Val::Px(0.0),
+                    top: Val::Px(5.0),
                     ..Default::default()
                 },
                 ..Default::default()
@@ -178,4 +179,39 @@ fn setup(
             ..Default::default()
         })
         .insert(Collider::Solid);
+}
+
+fn paddle_movement_system(
+    time: Res<Time>,
+    keyboard_input: Res<Input<KeyCode>>,
+    mut query: Query<(&Paddle, &mut Transform)>,
+) {
+    for (paddle, mut transform) in query.iter_mut() {
+        let mut direction = 0.0;
+
+        match paddle.side {
+            PlayerSide::Left => {
+                if keyboard_input.pressed(KeyCode::W) {
+                    direction += 1.0;
+                }
+                if keyboard_input.pressed(KeyCode::S) {
+                    direction -= 1.0;
+                }
+            }
+            PlayerSide::Right => {
+                if keyboard_input.pressed(KeyCode::Up) {
+                    direction += 1.0;
+                }
+                if keyboard_input.pressed(KeyCode::Down) {
+                    direction -= 1.0;
+                }
+            }
+        }
+
+        let translation = &mut transform.translation;
+
+        translation.y += time.delta_seconds() * direction * 500.0;
+
+        translation.y = translation.y.min(240.0).max(-240.0);
+    }
 }
